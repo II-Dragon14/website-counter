@@ -1,10 +1,11 @@
 from flask import Flask, jsonify
-import json
-import os
+from flask_cors import CORS
+import json, os
 
 app = Flask(__name__)
+CORS(app)
 
-COUNTER_FILE = "/data/counter.json"  # Render persistent disk mount
+COUNTER_FILE = "counter.json"
 
 def load_count():
     if not os.path.exists(COUNTER_FILE):
