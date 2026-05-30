@@ -5,7 +5,7 @@ import requests, os, base64, json
 app = Flask(__name__)
 CORS(app)
 
-GITHUB_TOKEN = os.environ.get("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")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 REPO = "II-Dragon14/website-counter"
 FILE_PATH = "counter.json"
 API_URL = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
