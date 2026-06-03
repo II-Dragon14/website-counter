@@ -15,9 +15,12 @@ HEADERS = {
     "Accept": "application/vnd.github.v3+json"
 }
 
+if not GITHUB_TOKEN:
+    raise RuntimeError("Fatal: Github Token could not be found.")
+
 def load_count():
     r = requests.get(API_URL, headers=HEADERS)
-    if r.status_code == 404:
+    if r.status_code != 200:
         return 0, None
     data = r.json()
     content = json.loads(base64.b64decode(data["content"]).decode())
