@@ -1,51 +1,31 @@
 from flask import Flask, jsonify
-from flask_cors import CORS
-import requests, os, base64, json
+from pymongo import MongoClient, ReturnDocument
+import os
 
 app = Flask(__name__)
-CORS(app)
 
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
-REPO = "II-Dragon14/website-counter"
-FILE_PATH = "counter.json"
-API_URL = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
+# Connect to MongoDB using your environment variable
+MONGO_URI = os.environ.get("MONGO_URI")
+client = MongoClient(MONGO_URI)
+db = client.analytics
+counters = db.counters
 
-HEADERS = {
-    "Authorization": f"token {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github.v3+json"
-}
+# Ensure the counter exists
+def init_counter():
+    if counters.find_one({"_id": "total"}) is None:
+        counters.insert_one({"_id": "total", "count": 0})
 
-if not GITHUB_TOKEN:
-    raise RuntimeError("Fatal: Github Token could not be found.")
-
-def load_count():
-    r = requests.get(API_URL, headers=HEADERS)
-    if r.status_code != 200:
-        return 0, None
-    data = r.json()
-    content = json.loads(base64.b64decode(data["content"]).decode())
-    return content.get("count", 0), data["sha"]
-
-def save_count(count, sha):
-    content = base64.b64encode(json.dumps({"count": count}).encode()).decode()
-    payload = {
-        "message": f"visit #{count}",
-        "content": content,
-    }
-    if sha:
-        payload["sha"] = sha
-    requests.put(API_URL, headers=HEADERS, json=payload)
+init_counter()
 
 @app.route("/api/visit")
 def visit():
-    count, sha = load_count()
-    count += 1
-    save_count(count, sha)
-    return jsonify({"visits": count})
+    result = counters.find_one_and_update(
+        {"_id": "total"},
+        {"$inc": {"count": 1}},
+        return_document=ReturnDocument.AFTER
+    )
+    return jsonify({"visits": result["count"]})
 
 @app.route("/")
 def home():
-    return "Visitor counter API running."
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    return "MongoDB visitor counter API running."
